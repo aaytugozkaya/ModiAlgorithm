@@ -2,11 +2,11 @@ import java.util.*;
 public class modiAlgorithm{
     // global variable
     static int row=0,col=0;
-    static int[][] c;
-    static int[][] totalSupply;
-    static int[][] p;
-    static int[] u;
-    static int[] v;
+    static int[][] c; // Matrisin değerleri
+    static int[][] totalSupply; // Atama yapılan değerlerin tutulduğu matris (Dolu gözeler)
+    static int[][] p; //Boş gözelerin gizli maliyetleri
+    static int[] u;//arz kısıtlarına karşılık gelen dual değişkenler U
+    static int[] v;//talep kısıtlarına karşılık gelen değişkenler V
 
     // main function
     public static void main(String args[]){
@@ -23,6 +23,7 @@ public class modiAlgorithm{
         v = new int[col];
         totalSupply = new int[row][col];
         System.out.println("Maliyetleri giriniz : ");
+        // Matrisin değerlerini alıyoruz.
         for (int i = 0; i < row; i++) {
             for (int j = 0; j < col; j++) {
                 c[i][j] = sc.nextInt();
@@ -31,6 +32,8 @@ public class modiAlgorithm{
         int[] supply = new int[row];
         int[] demand = new int[col];
         if (choice == 1){
+            // Arz ve talep miktarlarını alıyoruz.
+
             System.out.println("Arz miktarlarını giriniz : ");
             for (int i = 0; i < row; i++) {
                 supply[i] = sc.nextInt();
@@ -39,6 +42,7 @@ public class modiAlgorithm{
             for (int i = 0; i < col; i++) {
                 demand[i] = sc.nextInt();
             }
+            // Kuzey Batı Köşe Kuralı ile totalSupply matrisini dolduruyoruz.
             for (int i = 0; i < row; i++) {
                 for (int j = 0; j < col; j++) {
                     if (supply[i] == 0 || demand[j] == 0) {
@@ -58,6 +62,7 @@ public class modiAlgorithm{
         }
 
         if (choice == 2){
+            // Atanan değerleri alıyoruz.
             System.out.println("Atanan değerleri giriniz (Eğer hücreye atanan değer yoksa 0 giriniz.): ");
             for (int i = 0; i < row; i++) {
                 for (int j = 0; j < col; j++) {
@@ -66,14 +71,15 @@ public class modiAlgorithm{
             }
         }
 
-        calculate();
-        boolean status  = pij();
+        calculateUxAndVx();
+        calculateUnoccupiedCells();
         isOptimum();
 
     }
 
     // Ux ve Vx değerlerini hesaplıyor.
-    static void calculate(){
+    static void calculateUxAndVx(){
+
         ArrayList<Boolean> check = new ArrayList<>();
         int count = 0;
         for (int i = 0; i < row; i++) {
@@ -83,24 +89,31 @@ public class modiAlgorithm{
             }
             u[i]=Integer.MAX_VALUE;
         }
-        u[0]=0;
+        u[0]=0; // Başlangıç değeri olarak U0 = 0 alıyoruz.
+
         do{
             count=0;
             for (int i = 0; i < row; i++) {
                 for (int j = 0; j < col; j++) {
+                    // Eğer totalSupply matrisindeki değer 0 değilse ve kontrol edilmemişse
                     if(totalSupply[i][j]!=0){
+                        // Eğer Ux ve Vx değerleri hesaplanmamışsa hesaplıyoruz.
                         if(!check.get(count)){
                             if(v[j]!=Integer.MAX_VALUE&&u[i] == Integer.MAX_VALUE){
                                 u[i] = c[i][j] - v[j];
                                 check.remove(count);
                                 check.add(count, true);
-                            }else if(u[i]!=Integer.MAX_VALUE&&v[j]==Integer.MAX_VALUE){
+                            }
+                            // Eğer Ux ve Vx değerleri hesaplanmışsa diğer değerleri hesaplıyoruz.
+                            else if(u[i]!=Integer.MAX_VALUE&&v[j]==Integer.MAX_VALUE){
                                 v[j] = c[i][j] - u[i];
                                 check.remove(count);
                                 check.add(count, true);
                             }
                         }
-                    }else{
+                    }
+                    // Eğer totalSupply matrisindeki değer 0 ise kontrol edilmiş sayıyoruz.
+                    else{
                         check.remove(count);
                         check.add(count, true);
                     }
@@ -111,24 +124,23 @@ public class modiAlgorithm{
     }
 
     // İç indis hesaplaması yapar.
-    static boolean pij(){
+    static void calculateUnoccupiedCells(){
         p = new int[row][col];
-        boolean status = false;
+       // boolean status = false;
         for (int i = 0; i < row; i++) {
+            // Eğer totalSupply matrisindeki değer 0 ise p değerini hesaplıyoruz.
             for (int j = 0; j < col; j++) {
                 if(totalSupply[i][j]==0){
                     p[i][j]  = c[i][j] - (u[i] + v[j]) ;
-                    if(p[i][j] > 0) status = true;
+                    //if(p[i][j] > 0) status = true;
                 }
                 else{
                     p[i][j] = 0;
                 }
             }
         }
-
-        return status;
     }
-    // finding smallest pij
+    // Optimumluk kontrolü yapar.Eğer 0'dan küçük bir değer varsa optimum değildir.
     static void isOptimum(){
         boolean optimum = true;
         for (int i = 0; i < row; i++) {
